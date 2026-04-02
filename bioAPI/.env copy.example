@@ -1,0 +1,14 @@
+# App Settings
+PROJECT_NAME=biofast-api
+VERSION=1.0.0
+API_V1_STR=/api/v1
+
+# CORS configuration (comma separated origins)
+# E.g. http://localhost,http://localhost:3000
+BACKEND_CORS_ORIGINS=*
+
+# Optional API Key for securing non-health endpoints
+# API_KEY="your-secret-api-key"
+
+# Limits
+MAX_UPLOAD_SIZE_MB=50

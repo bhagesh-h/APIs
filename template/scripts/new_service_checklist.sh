@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "==============================================="
+echo "        NEW FASTAPI SERVICE CHECKLIST             "
+echo "==============================================="
+echo ""
+echo "1. Copy the template/ folder to your new repository."
+echo "2. Rename 'fastapi-template' in setup files:"
+echo "   - .env.example (APP_NAME)"
+echo "   - render.yaml (name)"
+echo "   - app/core/config.py (APP_NAME fallback)"
+echo "3. Copy .env.example to .env and fill out specific values."
+echo "4. Update API Version prefix if needed (API_V1_PREFIX)."
+echo "5. Delete example routes in app/api/v1/endpoints/ (examples.py, items.py)."
+echo "6. Add your domain-specific schemas to app/schemas/."
+echo "7. Add your domain logic to app/services/."
+echo "8. Create and register your new routers in app/api/v1/router.py."
+echo "9. Update or replace the tests in tests/."
+echo "10. Initialize git repository, commit, and push."
+echo ""
+echo "Happy coding!"
