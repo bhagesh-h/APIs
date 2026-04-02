@@ -65,8 +65,6 @@ bioAPI/
 └── requirements-dev.txt
 ```
 
----
-
 ## Local Setup & Development
 
 ### 1. Requirements
@@ -131,8 +129,6 @@ docker run --rm \
   -v "$(pwd)/app:/app/app" \
   bioAPI bash -c "pip install pytest httpx pytest-asyncio && pytest tests/"
 ```
-
----
 
 ## Example Usage
 
@@ -237,8 +233,6 @@ To interact with file upload endpoints via Postman:
 4. **Key**: `file` (Change the type of the key from 'Text' to 'File')
 5. **Value**: Select your `.fastq` or `.fasta` file.
 
----
-
 ## Deployment
 
 ### Docker
@@ -278,8 +272,6 @@ git push -u origin main
 ```
 
 *(You can also set up GitHub Actions later to run tests automatically on push).*
-
----
 
 ## Security Notes
 
