@@ -1,6 +1,6 @@
 # bioAPI
 
-A production-ready Python FastAPI project for bioinformatics utility workflows. Provides a fast, scalable REST API for sequence manipulation, file statistics, and format conversions using Biopython and FastAPI.
+A production-ready Python FastAPI project for bioinformatics utility workflows. Provides a fast, scalable REST API for sequence manipulation, FASTA/FASTQ string utilities, file statistics, and format conversions using Biopython and FastAPI.
 
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
@@ -13,6 +13,8 @@ A production-ready Python FastAPI project for bioinformatics utility workflows. 
 ## Features
 
 - **Sequence Utilities**: Reverse complement, transcribe, translate, GC-content, k-mer counts, motif searching.
+- **FASTA String Utilities**: Shorten headers, filter/slice/sample/split/merge sequences, case conversion, deduplication, ID extraction, and more — all operating on raw FASTA strings passed as JSON.
+- **FASTQ String Utilities**: Quality-score filtering, gzip compression/decompression — all operating on raw FASTQ strings.
 - **File Statistics**: Upload `FASTA`, `FASTQ`, `GenBank`, `BAM`, `VCF`, `GFF`, `GTF` or raw `String` files and get rich internal metadata (GC counts, read mapping scores, or precise feature aggregation).
 - **Advanced Extractions**: Filter features dynamically across formats using `GFF+FASTA` overlay extractions, or isolate selective mutations via `VCF` endpoints.
 - **Conversions & Consensus**: Convert between standard formats, or inject `VCF` alterations into a reference `FASTA` to derive a mutated consensus genome entirely natively.
@@ -33,11 +35,27 @@ A production-ready Python FastAPI project for bioinformatics utility workflows. 
 | Sequences | `/api/v1/sequences/transcribe` | POST | DNA to RNA |
 | Sequences | `/api/v1/sequences/back-transcribe` | POST | RNA to DNA |
 | Sequences | `/api/v1/sequences/translate` | POST | Nucleotide to protein |
-| Sequences | `/api/v1/sequences/gc-content` | POST | Calulate GC content |
+| Sequences | `/api/v1/sequences/gc-content` | POST | Calculate GC content |
 | Sequences | `/api/v1/sequences/count-bases` | POST | Count nucleotide/amino acid frequencies |
 | Sequences | `/api/v1/sequences/kmer` | POST | K-mer frequency counting |
 | Sequences | `/api/v1/sequences/find-motif` | POST | Search for substrings |
 | Sequences | `/api/v1/sequences/validate` | POST | Validate against an alphabet |
+| FASTA Utils | `/api/v1/fasta/shorten-headers` | POST | Truncate every header to N characters |
+| FASTA Utils | `/api/v1/fasta/get-n-sequences` | POST | Extract the first N sequences |
+| FASTA Utils | `/api/v1/fasta/filter-by-length` | POST | Filter sequences by min/max length |
+| FASTA Utils | `/api/v1/fasta/extract-subsequence` | POST | Slice a coordinate range from every sequence |
+| FASTA Utils | `/api/v1/fasta/sample-sequences` | POST | Randomly sample N sequences |
+| FASTA Utils | `/api/v1/fasta/split` | POST | Split into N chunks or chunks of size S |
+| FASTA Utils | `/api/v1/fasta/merge` | POST | Merge multiple FASTA strings into one |
+| FASTA Utils | `/api/v1/fasta/convert-case` | POST | Convert sequences to upper or lower case |
+| FASTA Utils | `/api/v1/fasta/remove-unknown-chars` | POST | Strip non-ACGT characters from sequences |
+| FASTA Utils | `/api/v1/fasta/rename-sequences` | POST | Rename sequence IDs via a mapping dict |
+| FASTA Utils | `/api/v1/fasta/modify-descriptions` | POST | Replace sequence descriptions via a mapping dict |
+| FASTA Utils | `/api/v1/fasta/find-unique` | POST | Deduplicate sequences by content |
+| FASTA Utils | `/api/v1/fasta/extract-ids` | POST | Return a list of all sequence IDs |
+| FASTQ Utils | `/api/v1/fastq/quality-filter` | POST | Filter reads by minimum Phred quality |
+| FASTQ Utils | `/api/v1/fastq/compress-gz` | POST | Gzip-compress a FASTQ string (base64 output) |
+| FASTQ Utils | `/api/v1/fastq/decompress-gz` | POST | Decompress a base64-encoded gzipped FASTQ |
 | Files | `/api/v1/files/stats` | POST | Upload file and get rich bio-stats |
 | Files | `/api/v1/files/summary` | POST | Alias for /stats |
 | Files | `/api/v1/files/extract-gff` | POST | Extract sliced FASTA targets via GFF bounds |
@@ -52,9 +70,25 @@ bioAPI/
 ├── app/
 │   ├── main.py                 # FastAPI entrypoint
 │   ├── core/                   # App config, constants, error handlers
-│   ├── api/                    # Routers and Dependencies
+│   ├── api/
+│   │   ├── deps.py             # API key + rate-limit dependencies
+│   │   └── routers/
+│   │       ├── health.py
+│   │       ├── sequences.py
+│   │       ├── files.py
+│   │       ├── conversions.py
+│   │       └── fasta_utils.py  # FASTA & FASTQ string utility endpoints
 │   ├── schemas/                # Pydantic models (Input/Output)
+│   │   ├── common.py
+│   │   ├── sequence.py
+│   │   ├── file_stats.py
+│   │   ├── conversion.py
+│   │   └── fasta_utils.py      # Models for FASTA/FASTQ utility endpoints
 │   ├── services/               # Core business logic / Biopython ops
+│   │   ├── sequence_service.py
+│   │   ├── file_service.py
+│   │   ├── conversion_service.py
+│   │   └── fasta_utils_service.py  # FASTA/FASTQ string operations
 │   └── utils/                  # Helper functions and validators
 ├── tests/                      # Pytest suite
 ├── .env.example
@@ -208,6 +242,47 @@ curl -X POST "http://127.0.0.1:8000/api/v1/files/extract-gff" \
   -o extracted_genes.fasta
 ```
 
+**8. Filter FASTA by Sequence Length**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/fasta/filter-by-length" \
+  -H "Content-Type: application/json" \
+  -d '{"fasta_string": ">s1\nACGT\n>s2\nACGTACGTACGT", "min_length": 8}'
+```
+
+**9. Split a FASTA into Chunks**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/fasta/split" \
+  -H "Content-Type: application/json" \
+  -d '{"fasta_string": ">s1\nAAAA\n>s2\nCCCC\n>s3\nGGGG\n>s4\nTTTT", "n": 2}'
+```
+
+**10. Rename Sequence IDs**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/fasta/rename-sequences" \
+  -H "Content-Type: application/json" \
+  -d '{"fasta_string": ">old_id\nACGT", "rename_map": {"old_id": "new_id"}}'
+```
+
+**11. Filter FASTQ Reads by Quality**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/fastq/quality-filter" \
+  -H "Content-Type: application/json" \
+  -d '{"fastq_string": "@read1\nACGT\n+\nIIII", "min_quality": 30}'
+```
+
+**12. Compress a FASTQ String**
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/v1/fastq/compress-gz" \
+  -H "Content-Type: application/json" \
+  -d '{"fastq_string": "@read1\nACGTACGT\n+\nIIIIIIII"}'
+# Returns base64-encoded gzip data — pass the `data_base64` value to /fastq/decompress-gz
+```
+
 ### Postman Examples
 
 To interact with the sequence endpoints via Postman:
@@ -222,6 +297,20 @@ To interact with the sequence endpoints via Postman:
 {
   "sequence": "ACTGACGACTGA",
   "k": 3
+}
+```
+
+To interact with **FASTA utility** endpoints via Postman:
+
+1. **Method**: `POST`
+2. **URL**: `http://127.0.0.1:8000/api/v1/fasta/extract-ids`
+3. **Headers**: `Content-Type: application/json`
+4. **Body Type**: `raw`
+5. **Payload**:
+
+```json
+{
+  "fasta_string": ">seq1\nACGTACGT\n>seq2\nTTTTGGGG"
 }
 ```
 
@@ -282,7 +371,9 @@ git push -u origin main
 
 - The conversion endpoint streams into temporary disk files. For massive datasets (> 500MB), consider queue-based off-loading (e.g., Celery) rather than synchronous REST handling which might timeout.
 - Ambiguous FASTQ features might be unparsable strictly depending on the instrument quality offsets.
+- The `/fastq/compress-gz` and `/fastq/decompress-gz` endpoints use base64 encoding to safely transport binary gzip data over JSON. For large files, prefer uploading directly via the file-based endpoints.
 
 ## Changelog
 
+- **v1.1.0**: Added 16 FASTA/FASTQ string utility endpoints (`/api/v1/fasta/*`, `/api/v1/fastq/*`) — ported and modernised from legacy monolith.
 - **v1.0.0**: Initial release with robust schemas and Biopython integration.

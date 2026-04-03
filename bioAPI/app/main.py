@@ -15,6 +15,7 @@ from app.core.errors import (
     global_exception_handler,
 )
 from app.api.routers import health, sequences, files, conversions
+from app.api.routers.fasta_utils import fasta_router, fastq_router
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -67,6 +68,8 @@ app.include_router(health.router)
 app.include_router(sequences.router, prefix=settings.API_V1_STR)
 app.include_router(files.router, prefix=settings.API_V1_STR)
 app.include_router(conversions.router, prefix=settings.API_V1_STR)
+app.include_router(fasta_router, prefix=settings.API_V1_STR)
+app.include_router(fastq_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     import uvicorn
